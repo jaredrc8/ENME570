@@ -14,11 +14,12 @@ water_density = 997; % kg/m3
 oil_density = 867.4; % kg/m3
 g = 9.81; % m/s2
 airspeed = sqrt((2*oil_density*g*40/1000)/(air_density));
-q = 0.5 * air_density * airspeed^2;
+q = 0.5 * air_density * airspeed^2; % dynamic pressure
+
 
 % Load the data
 data = load('naca0012.dat');
-pressure = load('pressure.txt');
+pressure = readmatrix("AirfoilLab_Template.xlsx","range","l19:t39");
 
 % Top of the airfoil
 x = data(1:length(data)/2+1, 1);
@@ -31,15 +32,16 @@ pp = spline(x, y);
 figure;
 hold on;
 grid on;
-% plot(x, y, 'o', 'DisplayName', 'Original Data');
-% plot(x, -y,'o', 'DisplayName', 'Original Data');
-axis([0 1 -1 1])
+title("NACA0012 Airfoil Visual Representation with Pressure Taps")
+axis([-0.2 1.1 -0.5 0.5])
+% plot(x, y, 'or', 'DisplayName', 'Original Data');
+% plot(x, -y,'or', 'DisplayName', 'Original Data');
 
 % Plot the fitted spline
 fitted_x = linspace(min(x), max(x), 1000);
 fitted_y = ppval(pp, fitted_x);
-plot(fitted_x, fitted_y, '-', 'DisplayName', 'Fitted Spline');
-plot(fitted_x, -fitted_y, '-', 'DisplayName', 'Fitted Spline');
+plot(fitted_x, fitted_y, 'r', 'DisplayName', 'Airfoil');
+plot(fitted_x, -fitted_y, 'r', 'DisplayName', 'Airfoil');
 
 %%
 
@@ -51,13 +53,14 @@ for i = 1:length(tap_locations)
     if mod(i,2) == 0
         tap_vectors(i,2) = - normal_vec(2);
         tap_locations(i,2) = - chord * ppval(pp, tap_locations(i,1)/chord);
-        quiver(tap_locations(i,1)/chord, -ppval(pp, tap_locations(i,1)/chord), tap_vectors(i,1)/5, tap_vectors(i,2)/5);
+        quiver(tap_locations(i,1)/chord, -ppval(pp, tap_locations(i,1)/chord), tap_vectors(i,1), tap_vectors(i,2),0.2,'b','DisplayName','Pressure Taps');
     else
         tap_vectors(i,2) = normal_vec(2);
         tap_locations(i,2) = chord * ppval(pp, tap_locations(i,1)/chord);
-        quiver(tap_locations(i,1)/chord, ppval(pp, tap_locations(i,1)/chord), tap_vectors(i,1)/5, tap_vectors(i,2)/5);
+        quiver(tap_locations(i,1)/chord, ppval(pp, tap_locations(i,1)/chord), tap_vectors(i,1), tap_vectors(i,2),0.2,'b','DisplayName','Pressure Taps');
     end
 end
+legend('Airfoil', '','Pressure Taps');
 
 % UNFINISHED SECTION: Visual representation of pressure tap locations and
 % panels for each pressure tap.
@@ -107,28 +110,45 @@ airfoil_circumference = 2 * chord * integral(@(t) sqrt(1 + ppval(fnder(pp), t).^
 disp("Sum of Panel Lengths: " + sum(panel_lengths) + "mm");
 disp("Airfoil Circumference: " + airfoil_circumference + "mm");
 
-% Lift Calculation
+% Lift/Drag Calculation
+static_pressure = pressure(end,:)';
 % For each angle of attack
 for AoA = 1:length(pressure(1,:))
     % For each panel/pressure tap
     for i = 1:length(tap_locations(:,1))
         dA = (span * panel_lengths(i,1)) / 10^6;
         % Direction of tap_vector accounts for upper/lower surface
-        dL(i,AoA) = pressure(i,AoA) * dA * tap_vectors(i,2);
+        dL(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,2);
+        dD(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,1);
+        Cp(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) / q;
     end
-    lift(AoA) = sum(dL(:,AoA)) - ;
+    lift(AoA) = sum(dL(:,AoA)) - sum(dL(:,1));
+    drag(AoA) = sum(dD(:,AoA)) - sum(dD(:,1));
 end
 
-% Coefficient of Lift Calculation
+% Coefficient Calculations
 for i = 1:length(lift)
     CL(i) = lift(i)/(q * (span * chord) / 10^6);
+    CD(i) = drag(i)/(q * (span * chord) / 10^6);
 end
 
 figure
 hold on
+grid on
 title("CL v AoA of NACA0012 Airfoil (Pressure Distribution)")
-plot([0,2,4,6,8,10,12,14,16],CL)
+plot(linspace(0,16,9),CL,'b-o')
 
+figure
+hold on
+grid on
+title("Cp Distribution of NACA0012")
+disp(linspace(1,19,10));
+for AoA = 2:2:length(Cp(1,:))
+    for i = 1:length(Cp(:,1))
+        plot(linspace(1,1,10),Cp(:,i));
+        plot(linspace(2,20,10),Cp(:,i));
+    end
+end
 
 %%
 % FUNCTIONS
