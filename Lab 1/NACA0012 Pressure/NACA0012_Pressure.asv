@@ -120,10 +120,22 @@ for AoA = 1:length(pressure(1,:))
         % Direction of tap_vector accounts for upper/lower surface
         dL(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,2);
         dD(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,1);
-        Cp(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) / q;
+        Cp(i,AoA) = -(pressure(i,AoA) - static_pressure(AoA,1)) / q;
     end
-    lift(AoA) = sum(dL(:,AoA)) - sum(dL(:,1));
-    drag(AoA) = sum(dD(:,AoA)) - sum(dD(:,1));
+    % Sum differential lift to equal total lift, subtracted by lift at
+    % AoA=0 as a correction
+    dL(6,Ao)
+    lift(AoA) = (sum(dL(:,AoA)) - sum(dL(:,1))) * cos(deg2rad(AoA*2-2));
+    drag(AoA) = (sum(dD(:,AoA)) - sum(dD(:,1))) * cos(deg2rad(AoA*2-2));
+end
+
+% Plot pressure force distribution on airfoil (visual representation)
+figure
+hold on
+plot(fitted_x, fitted_y, 'r', 'DisplayName', 'Airfoil');
+plot(fitted_x, -fitted_y, 'r', 'DisplayName', 'Airfoil');
+for i = 1:length(tap_locations(:,1))
+    quiver([tap_locations(i,1)/chord, ppval(pp, tap_locations(i,1)/chord)], [dD(i,1), dL(i,1)],'b','DisplayName','');
 end
 
 % Coefficient Calculations
@@ -137,18 +149,24 @@ hold on
 grid on
 title("CL v AoA of NACA0012 Airfoil (Pressure Distribution)")
 plot(linspace(0,16,9),CL,'b-o')
+xlabel("Angle of Attack (degrees)")
+ylabel("CL")
 
 figure
 hold on
 grid on
 title("Cp Distribution of NACA0012")
-disp(linspace(1,19,10));
+Cp(6,:) = -Cp(6,:);
+Cp(9,:) = -Cp(9,:);
+Cp_upper = Cp(1:2:19,:);
+Cp_lower = Cp(2:2:20,:);
 for AoA = 2:2:length(Cp(1,:))
-    for i = 1:length(Cp(:,1))
-        plot(linspace(1,1,10),Cp(:,i));
-        plot(linspace(2,20,10),Cp(:,i));
-    end
+    plot(linspace(1,19,10)/20,Cp_upper(:,AoA),'b-o','DisplayName','Upper Airfoil Surface');
+    plot(linspace(2,20,10)/20,Cp_lower(:,AoA),'r-o', 'DisplayName', 'Lower Airfoil Surface');
 end
+legend('Upper Airfoil Surface','','','','','Lower Airfoil Surface');
+xlabel("Nondimensional position, x/chord")
+ylabel("Cp")
 
 %%
 % FUNCTIONS

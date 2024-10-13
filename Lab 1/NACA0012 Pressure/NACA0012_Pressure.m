@@ -118,13 +118,28 @@ for AoA = 1:length(pressure(1,:))
     for i = 1:length(tap_locations(:,1))
         dA = (span * panel_lengths(i,1)) / 10^6;
         % Direction of tap_vector accounts for upper/lower surface
-        dL(i,AoA) = -(pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,2);
-        dD(i,AoA) = -(pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,1);
+        dL(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,2);
+        dD(i,AoA) = (pressure(i,AoA) - static_pressure(AoA,1)) * dA * tap_vectors(i,1);
         Cp(i,AoA) = -(pressure(i,AoA) - static_pressure(AoA,1)) / q;
     end
-    lift(AoA) = sum(dL(:,AoA)) - sum(dL(:,1));
-    drag(AoA) = sum(dD(:,AoA)) - sum(dD(:,1));
+    % Sum differential lift to equal total lift, subtracted by lift at
+    % AoA=0 as a correction
+    % dL(6,AoA) = -dL(6,AoA);
+    % dD(6,AoA) = -dD(6,AoA);
+    % dL(9,AoA) = -dL(9,AoA);
+    % dD(9,AoA) = -dD(9,AoA);
+    lift(AoA) = (sum(dL(:,AoA)) - sum(dL(:,1))) * cos(deg2rad(AoA*2-2));
+    drag(AoA) = (sum(dD(:,AoA)) - sum(dD(:,1))) * cos(deg2rad(AoA*2-2));
 end
+
+% Plot pressure force distribution on airfoil (visual representation)
+% figure
+% hold on
+% plot(fitted_x, fitted_y, 'r', 'DisplayName', 'Airfoil');
+% plot(fitted_x, -fitted_y, 'r', 'DisplayName', 'Airfoil');
+% for i = 1:length(tap_locations(:,1))
+%     quiver(tap_locations(i,1),tap_locations(i,2),tap_locations(i,1)+dD(i,1),tap_locations(i,2)+dL(i,1),'b','DisplayName','');
+% end
 
 % Coefficient Calculations
 for i = 1:length(lift)
@@ -137,17 +152,24 @@ hold on
 grid on
 title("CL v AoA of NACA0012 Airfoil (Pressure Distribution)")
 plot(linspace(0,16,9),CL,'b-o')
+xlabel("Angle of Attack (degrees)")
+ylabel("CL")
 
 figure
 hold on
 grid on
 title("Cp Distribution of NACA0012")
+% Cp(6,:) = -Cp(6,:);
+% Cp(9,:) = -Cp(9,:);
+Cp_upper = Cp(1:2:19,:);
+Cp_lower = Cp(2:2:20,:);
 for AoA = 2:2:length(Cp(1,:))
-    % for i = 1:2:length(Cp(:,1))
-        plot(linspace(1,19,10),-Cp(1:2:19,AoA),'b-o');
-        plot(linspace(2,20,10),-Cp(2:2:20,AoA),'r-o');
-    % end
+    plot(linspace(1,19,10)/20,Cp_upper(:,AoA),'b-o','DisplayName','Upper Airfoil Surface');
+    plot(linspace(2,20,10)/20,Cp_lower(:,AoA),'r-o', 'DisplayName', 'Lower Airfoil Surface');
 end
+legend('Upper Airfoil Surface','','','','','Lower Airfoil Surface');
+xlabel("Nondimensional position, x/chord")
+ylabel("Cp")
 
 %%
 % FUNCTIONS
