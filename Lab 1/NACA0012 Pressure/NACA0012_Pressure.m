@@ -109,6 +109,7 @@ end
 airfoil_circumference = 2 * chord * integral(@(t) sqrt(1 + ppval(fnder(pp), t).^2), min(x), max(x));
 disp("Sum of Panel Lengths: " + sum(panel_lengths) + "mm");
 disp("Airfoil Circumference: " + airfoil_circumference + "mm");
+disp("Discretization Error: " + ((sum(panel_lengths)-airfoil_circumference)/airfoil_circumference*100) + "%");
 
 % Lift/Drag Calculation
 static_pressure = pressure(end,:)';
@@ -124,10 +125,6 @@ for AoA = 1:length(pressure(1,:))
     end
     % Sum differential lift to equal total lift, subtracted by lift at
     % AoA=0 as a correction
-    % dL(6,AoA) = -dL(6,AoA);
-    % dD(6,AoA) = -dD(6,AoA);
-    % dL(9,AoA) = -dL(9,AoA);
-    % dD(9,AoA) = -dD(9,AoA);
     lift(AoA) = (sum(dL(:,AoA)) - sum(dL(:,1))) * cos(deg2rad(AoA*2-2));
     drag(AoA) = (sum(dD(:,AoA)) - sum(dD(:,1))) * cos(deg2rad(AoA*2-2));
 end
@@ -150,26 +147,38 @@ end
 figure
 hold on
 grid on
-title("CL v AoA of NACA0012 Airfoil (Pressure Distribution)")
+title("Cl v AoA of NACA0012 Airfoil (Pressure Distribution)")
 plot(linspace(0,16,9),CL,'b-o')
 xlabel("Angle of Attack (degrees)")
-ylabel("CL")
+ylabel("Cl")
 
 figure
 hold on
 grid on
 title("Cp Distribution of NACA0012")
-% Cp(6,:) = -Cp(6,:);
-% Cp(9,:) = -Cp(9,:);
 Cp_upper = Cp(1:2:19,:);
 Cp_lower = Cp(2:2:20,:);
-for AoA = 2:2:length(Cp(1,:))
-    plot(linspace(1,19,10)/20,Cp_upper(:,AoA),'b-o','DisplayName','Upper Airfoil Surface');
-    plot(linspace(2,20,10)/20,Cp_lower(:,AoA),'r-o', 'DisplayName', 'Lower Airfoil Surface');
-end
-legend('Upper Airfoil Surface','','','','','Lower Airfoil Surface');
+% AoA = 2
+plot(tap_locations(2:2:20,1)/chord,Cp_upper(:,2),'r-o','DisplayName','Upper Airfoil Surface');
+plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,2),'r-+', 'DisplayName', 'Lower Airfoil Surface');
+% AoA = 6
+plot(tap_locations(2:2:20,1)/chord,Cp_upper(:,4),'b-o','DisplayName','Upper Airfoil Surface');
+plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,4),'b-+', 'DisplayName', 'Lower Airfoil Surface');
+% AoA = 10
+plot(tap_locations(2:2:20,1)/chord,Cp_upper(:,6),'k-o','DisplayName','Upper Airfoil Surface');
+plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,6),'k-+', 'DisplayName', 'Lower Airfoil Surface');
+% AoA = 14
+plot(tap_locations(2:2:20,1)/chord,Cp_upper(:,8),'m-o','DisplayName','Upper Airfoil Surface');
+plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,8),'m-+', 'DisplayName', 'Lower Airfoil Surface');
+
+% for AoA = 2:2:length(Cp(1,:))
+    % plot(linspace(1,19,10)/20,Cp_upper(:,AoA),'-o','DisplayName','Upper Airfoil Surface');
+    % plot(linspace(2,20,10)/20,Cp_lower(:,AoA),'-+', 'DisplayName', 'Lower Airfoil Surface');
+% end
+legend('Upper Airfoil Surface a=2','Lower Airfoil Surface a=2','Upper Airfoil Surface a=6','Lower Airfoil Surface a=6','Upper Airfoil Surface a=10','Lower Airfoil Surface a=10','Upper Airfoil Surface a=14','Lower Airfoil Surface a=14','Location','best');
 xlabel("Nondimensional position, x/chord")
 ylabel("Cp")
+axis([0 0.92 -5 2])
 
 %%
 % FUNCTIONS

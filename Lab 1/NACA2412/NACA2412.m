@@ -37,7 +37,7 @@ for i = 1:length(alpha)
     mean_lift_forces(i) = mean(Data_force(indices));
 end
 
-mean_lift_forces = -mean_lift_forces;
+mean_lift_forces = abs(mean_lift_forces);
 
 % Calculate Lift Coefficient
 C_L = mean_lift_forces / (0.5 * rho_air * U_inf^2 * A); % Lift Coefficient
@@ -85,5 +85,5 @@ figure;
 plot(C_D,C_L,'b-o'); % Plot Cd vs CL
 xlabel('CD');
 ylabel('CL');
-title('CD vs CL for NACA2412 Airfoil');
+title('CL vs CD for NACA2412 Airfoil');
 grid on;

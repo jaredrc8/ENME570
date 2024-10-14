@@ -84,5 +84,5 @@ figure;
 plot(C_D,C_L,'b-o'); % Plot Cd vs CL
 xlabel('CD');
 ylabel('CL');
-title('CD vs CL for NACA0012 Airfoil');
+title('CL vs CD for NACA0012 Airfoil');
 grid on;
