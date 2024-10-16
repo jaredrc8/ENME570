@@ -20,6 +20,7 @@ q = 0.5 * air_density * airspeed^2; % dynamic pressure
 % Load the data
 data = load('naca0012.dat');
 pressure = readmatrix("AirfoilLab_Template.xlsx","range","l19:t39");
+pressure_literature = readmatrix("wpd_datasets.csv");
 
 % Top of the airfoil
 x = data(1:length(data)/2+1, 1);
@@ -129,15 +130,6 @@ for AoA = 1:length(pressure(1,:))
     drag(AoA) = (sum(dD(:,AoA)) - sum(dD(:,1))) * cos(deg2rad(AoA*2-2));
 end
 
-% Plot pressure force distribution on airfoil (visual representation)
-% figure
-% hold on
-% plot(fitted_x, fitted_y, 'r', 'DisplayName', 'Airfoil');
-% plot(fitted_x, -fitted_y, 'r', 'DisplayName', 'Airfoil');
-% for i = 1:length(tap_locations(:,1))
-%     quiver(tap_locations(i,1),tap_locations(i,2),tap_locations(i,1)+dD(i,1),tap_locations(i,2)+dL(i,1),'b','DisplayName','');
-% end
-
 % Coefficient Calculations
 for i = 1:length(lift)
     CL(i) = lift(i)/(q * (span * chord) / 10^6);
@@ -170,15 +162,23 @@ plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,6),'k-+', 'DisplayName', 'Lower Ai
 % AoA = 14
 plot(tap_locations(2:2:20,1)/chord,Cp_upper(:,8),'m-o','DisplayName','Upper Airfoil Surface');
 plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,8),'m-+', 'DisplayName', 'Lower Airfoil Surface');
-
-% for AoA = 2:2:length(Cp(1,:))
-    % plot(linspace(1,19,10)/20,Cp_upper(:,AoA),'-o','DisplayName','Upper Airfoil Surface');
-    % plot(linspace(2,20,10)/20,Cp_lower(:,AoA),'-+', 'DisplayName', 'Lower Airfoil Surface');
-% end
 legend('Upper Airfoil Surface a=2','Lower Airfoil Surface a=2','Upper Airfoil Surface a=6','Lower Airfoil Surface a=6','Upper Airfoil Surface a=10','Lower Airfoil Surface a=10','Upper Airfoil Surface a=14','Lower Airfoil Surface a=14','Location','best');
 xlabel("Nondimensional position, x/chord")
 ylabel("Cp")
 axis([0 0.92 -5 2])
+
+figure
+hold on
+grid on
+title("Cp Distribution of NACA0012 at AoA=10");
+plot(pressure_literature(:,1),pressure_literature(:,2),'r-','DisplayName','Literature');
+plot(pressure_literature(:,3),pressure_literature(:,4),'r-','DisplayName','Literature');
+plot(tap_locations(2:2:20,1)/chord,Cp_upper(:,6),'b-o','DisplayName','Experimental');
+plot(tap_locations(1:2:19,1)/chord,Cp_lower(:,6),'b-o','DisplayName','Experimental');
+axis([0 0.92 -5 2])
+xlabel("Nondimensional position, x/chord")
+ylabel("Cp")
+legend('Literature','','','Experimental','Location','best')
 
 %%
 % FUNCTIONS
@@ -187,7 +187,7 @@ axis([0 0.92 -5 2])
 function normal_vector = normalAtX(x_val, pp)
     % Calculate the first derivative (slope)
     dydx = ppval(fnder(pp, 1), x_val);
-    
+
     % Tangent vector (normalized)
     tangent_vector = [1, dydx] / norm([1, dydx]);
     
